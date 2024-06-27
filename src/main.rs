@@ -1,7 +1,5 @@
-mod models;
-mod parsers;
+use bdb_parser::parsers::parse_track_database;
 
-use crate::parsers::parse_track_database;
 use std::env;
 use std::path::Path;
 use std::process;

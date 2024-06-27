@@ -10,14 +10,14 @@ use nom::{
 
 use crate::models::*;
 
-enum TrackData {
+pub enum TrackData {
     TrackName(String),
     StartLine(Line),
     ComboFlag,
     FinishLine(Line),
 }
 
-fn parse_chunk_id(input: &[u8]) -> IResult<&[u8], ChunkIdentifier> {
+pub fn parse_chunk_id(input: &[u8]) -> IResult<&[u8], ChunkIdentifier> {
     let (input, val) = le_u8(input)?;
     Ok((
         input,
@@ -26,21 +26,21 @@ fn parse_chunk_id(input: &[u8]) -> IResult<&[u8], ChunkIdentifier> {
     ))
 }
 
-fn parse_lat_long_raw(input: &[u8]) -> IResult<&[u8], LatLong> {
+pub fn parse_lat_long_raw(input: &[u8]) -> IResult<&[u8], LatLong> {
     map(tuple((le_i32, le_i32)), |(lat, long)| LatLong {
         lat: (lat as f64) / (100000.0 * 60.0),
         long: (long as f64) / (100000.0 * 60.0),
     })(input)
 }
 
-fn parse_bounding_box(input: &[u8]) -> IResult<&[u8], BoundingBox> {
+pub fn parse_bounding_box(input: &[u8]) -> IResult<&[u8], BoundingBox> {
     map(
         tuple((parse_lat_long_raw, parse_lat_long_raw)),
         |(min, max)| BoundingBox { min, max },
     )(input)
 }
 
-fn parse_line(input: &[u8]) -> IResult<&[u8], Line> {
+pub fn parse_line(input: &[u8]) -> IResult<&[u8], Line> {
     map(
         tuple((parse_lat_long_raw, parse_lat_long_raw)),
         |(min, max)| Line {
@@ -50,7 +50,7 @@ fn parse_line(input: &[u8]) -> IResult<&[u8], Line> {
     )(input)
 }
 
-fn parse_track_data(input: &[u8]) -> IResult<&[u8], TrackData> {
+pub fn parse_track_data(input: &[u8]) -> IResult<&[u8], TrackData> {
     let (input, chunk_id) = parse_chunk_id(input)?;
     let (input, len) = le_u8(input)?;
     let (input, _) = tag([0, 0])(input)?; // padding
@@ -149,7 +149,7 @@ pub fn parse_region_chunk(input: &[u8]) -> IResult<&[u8], Region> {
     ))
 }
 
-fn parse_footer(input: &[u8]) -> IResult<&[u8], Footer> {
+pub fn parse_footer(input: &[u8]) -> IResult<&[u8], Footer> {
     let (input, _) = verify(parse_chunk_id, |&id| id == ChunkIdentifier::FileFooter)(input)?;
     let (input, _total_len) = le_u16(input)?;
     let (input, _) = tag([0])(input)?; // padding
