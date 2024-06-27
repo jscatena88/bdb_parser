@@ -1,4 +1,4 @@
-use bdb_parser::parsers::parse_track_database;
+use bdb_parser::parse_track_database;
 
 use std::env;
 use std::path::Path;

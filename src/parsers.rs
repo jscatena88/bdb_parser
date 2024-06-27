@@ -1,3 +1,5 @@
+//! This module contains the parsing functions for the file format.
+
 use nom::{
     bytes::complete::{tag, take},
     combinator::{map, verify},
@@ -36,7 +38,10 @@ pub fn parse_lat_long_raw(input: &[u8]) -> IResult<&[u8], LatLong> {
 pub fn parse_bounding_box(input: &[u8]) -> IResult<&[u8], BoundingBox> {
     map(
         tuple((parse_lat_long_raw, parse_lat_long_raw)),
-        |(min, max)| BoundingBox { min, max },
+        |(min, max)| BoundingBox {
+            corner_1: min,
+            corner_2: max,
+        },
     )(input)
 }
 
@@ -188,6 +193,7 @@ pub fn parse_file_header(input: &[u8]) -> IResult<&[u8], FileHeader> {
     ))
 }
 
+/// This is the top level parsing function that accepts the entire file and returns a `TrackDatabase`.
 pub fn parse_track_database(input: &[u8]) -> IResult<&[u8], TrackDatabase> {
     let (input, hdr) = parse_file_header(input)?;
     let (input, mids) = count(parse_region_chunk, 65)(input)?;
