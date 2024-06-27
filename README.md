@@ -6,6 +6,8 @@ BDB Parser is a Rust-based library and binary crate designed to parse `.BDB` fil
 
 This parser was written as a complete black box reverse engineering exercise. It is not endorsed by the original author of the file format. The file was found on the VBOX Motorsports website, and seems to be used to store race track data for some of their hardware products. I found the file compressed into the `TRACKS.ZIP` file available on this page: https://www.vboxmotorsport.co.uk/index.php/us/customer-ct-track-database . Specifically, I used the "VBOX Touch" download.
 
+The majority of the reverse engineering work was done using the excellent [ImHex Tool](https://imhex.werwolv.net/), in the course of that work I created a pattern file that is now available in the repo at `reverse_engineering/TrackDataBase.pat`. This pattern file is very incomplete, less complete then the parsing done in this rust codebase. However it may have some interest as a working document, showing where I was when I transitioned to implementing the format in Rust.
+
 ## Features
 
 - Parses `.BDB` files containing race track data.
