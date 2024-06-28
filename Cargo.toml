@@ -6,6 +6,7 @@ authors = ["Jason Scatena <jason@scatena.co>"]
 description = "A parser for the BDB file format"
 readme = "README.md"
 license = "MIT"
+repository = "https://github.com/jscatena88/bdb_parser"
 
 [lib]
 name = "bdb_parser"
