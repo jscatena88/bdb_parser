@@ -29,7 +29,7 @@ For detailed information on the file structure, refer to the [BDB File Format Do
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/bdb_parser.git
+    git clone https://github.com/jscatena88/bdb_parser.git
     cd bdb_parser
     ```
 
