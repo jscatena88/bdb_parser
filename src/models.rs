@@ -35,23 +35,23 @@ impl TryFrom<u8> for ChunkIdentifier {
 
 /// The latitude and longitude of a point.
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-pub struct LatLong {
+pub struct LatLon {
     pub lat: f64,
-    pub long: f64,
+    pub lon: f64,
 }
 
 /// The bounding box of a region or track.
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct BoundingBox {
-    pub corner_1: LatLong,
-    pub corner_2: LatLong,
+    pub corner_1: LatLon,
+    pub corner_2: LatLon,
 }
 
 /// A line segment between two points.
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Line {
-    pub point_1: LatLong,
-    pub point_2: LatLong,
+    pub point_1: LatLon,
+    pub point_2: LatLon,
 }
 
 /// The start and finish of a track.

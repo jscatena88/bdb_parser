@@ -28,10 +28,11 @@ pub fn parse_chunk_id(input: &[u8]) -> IResult<&[u8], ChunkIdentifier> {
     ))
 }
 
-pub fn parse_lat_long_raw(input: &[u8]) -> IResult<&[u8], LatLong> {
-    map(tuple((le_i32, le_i32)), |(lat, long)| LatLong {
+pub fn parse_lat_long_raw(input: &[u8]) -> IResult<&[u8], LatLon> {
+    // These are stored as minutes * 100000, therefore to get Decimal Degrees we need to divide by 100000 * 60
+    map(tuple((le_i32, le_i32)), |(lat, long)| LatLon {
         lat: (lat as f64) / (100000.0 * 60.0),
-        long: (long as f64) / (100000.0 * 60.0),
+        lon: (long as f64) / (100000.0 * 60.0),
     })(input)
 }
 
@@ -58,7 +59,7 @@ pub fn parse_line(input: &[u8]) -> IResult<&[u8], Line> {
 pub fn parse_track_data(input: &[u8]) -> IResult<&[u8], TrackData> {
     let (input, chunk_id) = parse_chunk_id(input)?;
     let (input, len) = le_u16(input)?;
-    let (input, _) = tag([ 0])(input)?; // padding
+    let (input, _) = tag([0])(input)?; // padding
 
     match chunk_id {
         ChunkIdentifier::TrackName => {
@@ -169,9 +170,9 @@ pub fn parse_footer(input: &[u8]) -> IResult<&[u8], Footer> {
     ))
 }
 
-pub fn parse_file_header(input: &[u8]) -> IResult<&[u8], FileHeader> {
+pub fn parse_file_header(input: &[u8]) -> IResult<&[u8], (FileHeader, u16)> {
     let (input, _) = verify(parse_chunk_id, |&id| id == ChunkIdentifier::FileHeader)(input)?;
-    let (input, _) = le_u16(input)?;
+    let (input, file_length) = le_u16(input)?; //Length of the entire file
     let (input, _) = tag([0])(input)?; // padding
 
     let (input, year) = le_u16(input)?;
@@ -182,22 +183,28 @@ pub fn parse_file_header(input: &[u8]) -> IResult<&[u8], FileHeader> {
 
     Ok((
         input,
-        FileHeader {
+        (FileHeader {
             year,
             month,
             day,
             data: [
                 data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
             ],
-        },
+        }, file_length),
     ))
 }
 
 /// This is the top level parsing function that accepts the entire file and returns a `TrackDatabase`.
 pub fn parse_track_database(input: &[u8]) -> IResult<&[u8], TrackDatabase> {
-    let (input, hdr) = parse_file_header(input)?;
+    let (input, (hdr, _file_len)) = parse_file_header(input)?;
     let (input, mids) = many0(parse_region_chunk)(input)?;
     let (input, footer) = parse_footer(input)?;
+    if !input.is_empty() {
+        return Err(nom::Err::Error(nom::error::Error::new(
+            input,
+            ErrorKind::Eof,
+        )));
+    }
 
     Ok((
         input,

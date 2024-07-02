@@ -1,111 +1,187 @@
-# Track Database (.BDB) File Format Documentation
+# Racetrack Database File Format Documentation
 
-## Overview
+This document describes the file format used to store racetrack location and information data.
 
-This document describes the binary format of the .BDB file, which contains a database of race tracks around the world. The format consists of a file header, multiple region chunks, and a footer.
+## File Structure Overview
 
-## File Structure
+The file format is organized into a series of "chunks". A chunk is a self-contained unit of data with a specific structure:
 
-1. File Header (16 bytes)
-2. Region Chunks (variable size)
-3. Footer (8 bytes)
+1. A single-byte identifier that indicates the type of data in the chunk
+2. A two-byte length field (in little-endian format) that specifies the total length of the chunk in bytes, including the identifier and length fields
+3. One byte of padding (always set to 0)
+4. The actual data content of the chunk
 
-## Detailed Structure
+The file consists of the following main sections, each represented by one or more chunks:
 
-### File Header
+1. File Header (single chunk)
+2. Variable number of Region Chunks
+3. File Footer (single chunk)
 
-Total size: 16 bytes
+## Chunk Identifiers
 
-| Offset | Size (bytes) | Description     | Value/Type     |
-|--------|--------------|-----------------|----------------|
-| 0x00   | 1            | Chunk ID        | 0xA1           |
-| 0x01   | 2            | Length          | uint16_le      |
-| 0x03   | 1            | Padding         | 0x00           |
-| 0x04   | 2            | Year            | uint16_le      |
-| 0x06   | 1            | Month           | uint8          |
-| 0x07   | 1            | Day             | uint8          |
-| 0x08   | 8            | Unknown data    | byte[8]        |
+Each chunk in the file is identified by a single byte:
 
-### Region Chunk
+| Identifier | Meaning     |
+|------------|-------------|
+| 0xA1       | File Header |
+| 0xA2       | Region      |
+| 0xA3       | Track       |
+| 0xA4       | Track Name  |
+| 0xA5       | Start Line  |
+| 0xA6       | Finish Line |
+| 0xA7       | Combo Flag  |
+| 0xEE       | File Footer |
 
-Total size is variable.
+## File Header Chunk
 
-| Offset | Size (bytes) | Description     | Value/Type     |
-|--------|--------------|-----------------|----------------|
-| 0x00   | 1            | Chunk ID        | 0xA2           |
-| 0x01   | 2            | Length          | uint16_le      |
-| 0x03   | 1            | Padding         | 0x00           |
-| 0x04   | 16           | Bounding Box    | 2 x LatLong    |
-| 0x14   | Variable     | Track Chunks    | Track Chunk[]  |
+```
+                     1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++---------------+---------------+---------------+---------------+
+|     0xA1      | File Length (2 bytes, little-endian) |   0x00 |
++---------------+---------------+---------------+---------------+
+|           Year (2 bytes, little-endian)       |     Month     |
++---------------+---------------+---------------+---------------+
+|      Day      |                 Unknown Data (8 bytes)        |
++---------------+---------------+---------------+---------------+
+|                       Unknown Data (cont.)                    |
++---------------+---------------+---------------+---------------+
+|Unk.Data(cont.)|
++---------------+
+```
 
-### Track Chunk
+The File Header chunk contains:
+- Chunk identifier (0xA1)
+- Length of the entire file (2 bytes, little-endian)
+- 1 byte of padding (0)
+- Year (2 bytes, little-endian)
+- Month (1 byte)
+- Day (1 byte)
+- 8 bytes of unknown data
 
-| Offset | Size (bytes) | Description     | Value/Type     |
-|--------|--------------|-----------------|----------------|
-| 0x00   | 1            | Chunk ID        | 0xA3           |
-| 0x01   | 2            | Length          | uint16_le      |
-| 0x03   | 1            | Padding         | 0x00           |
-| 0x04   | 16           | Bounding Box    | 2 x LatLong    |
-| 0x14   | Variable     | Track Data      | TrackData[]    |
+Since the length field of this chunk is the length of the entire file it can actually be thought of as the entire file is part of this chunk's data. So it could be more accurate to think of this as a "top-level of the file" chunk, that contains all the data in the file, as opposed to a header sitting on top of the file. It makes me wonder if this format was made to embed in a larger format or protocol 
 
-#### Track Data
+## Region Chunk
 
-Can be one of four types:
+```
+                     1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++---------------+---------------+---------------+---------------+
+|     0xA2      |   Length (2 bytes, little-endian)   |   0x00  |
++---------------+---------------+---------------+---------------+
+|                    Bounding Box (16 bytes)                    |
++---------------+---------------+---------------+---------------+
+|                    Bounding Box (cont.)                       |
++---------------+---------------+---------------+---------------+
+|                    Bounding Box (cont.)                       |
++---------------+---------------+---------------+---------------+
+|                    Bounding Box (cont.)                       |
++---------------+---------------+---------------+---------------+
+|                  Track Chunks (Variable Size)                 |
++---------------+---------------+---------------+---------------+
+```
 
-1. Track Name (Chunk ID: 0xA4)
-   - Length: 1 byte
-   - Padding: 2 bytes
-   - Name: UTF-8 encoded string (length - 4 bytes)
+The Region Chunk contains:
+- Chunk identifier (0xA2)
+- Length of the region chunk (2 bytes, little-endian)
+- 1 byte of padding (0)
+- Bounding Box (16 bytes, two LatLon pairs)
+- Multiple Track Chunks
 
-2. Start Line (Chunk ID: 0xA5)
-   - Length: 1 byte (always 20)
-   - Padding: 2 bytes
-   - Line: 2 x LatLong (16 bytes)
+## Track Chunk
 
-3. Combo Flag (Chunk ID: 0xA7)
-   - Length: 1 byte
-   - Padding: 2 bytes
-   - Combo: uint8 (1 byte)
+```
+                     1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++---------------+---------------+---------------+---------------+
+|     0xA3      |   Length (2 bytes, little-endian)   |   0x00  |
++---------------+---------------+---------------+---------------+
+|                    Bounding Box (16 bytes)                    |
++---------------+---------------+---------------+---------------+
+|                    Bounding Box (cont.)                       |
++---------------+---------------+---------------+---------------+
+|                    Bounding Box (cont.)                       |
++---------------+---------------+---------------+---------------+
+|                    Bounding Box (cont.)                       |
++---------------+---------------+---------------+---------------+
+|                Track Data Chunks (Variable Size)              |
++---------------+---------------+---------------+---------------+
+```
 
-4. Finish Line (Chunk ID: 0xA6)
-   - Length: 1 byte (always 20)
-   - Padding: 2 bytes
-   - Line: 2 x LatLong (16 bytes)
+The Track Chunk contains:
+- Chunk identifier (0xA3)
+- Length of the track chunk (2 bytes, little-endian)
+- 1 byte of padding (0)
+- Bounding Box (16 bytes, two LatLon pairs)
+- Track Data (variable length, consists of multiple sub-chunks)
 
-### Footer
+## Track Data Chunks
 
-Total size: 8 bytes
+Track Data consists of multiple Chunks, each following this format:
 
-| Offset | Size (bytes) | Description     | Value/Type     |
-|--------|--------------|-----------------|----------------|
-| 0x00   | 1            | Chunk ID        | 0xEE           |
-| 0x01   | 2            | Length          | uint16_le      |
-| 0x03   | 1            | Padding         | 0x00           |
-| 0x04   | 4            | Unknown data    | byte[4]        |
+```
+                     1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++---------------+---------------+---------------+---------------+
+| Chunk ID (1B) |     Length (2 bytes, little-endian)  |  0x00  |
++---------------+---------------+---------------+---------------+
+|                         Chunk Data                            |
++---------------+---------------+---------------+---------------+
+```
 
-## Coordinate System
+### Track Data Types
 
-Latitude and longitude are stored as int32 values. To convert to decimal degrees:
+1. **Track Name (0xA4)**
+   - Always Present
+   - Contains the name of the track as a UTF-8 encoded string.
+   - The length field indicates the total length of the chunk, including the 4-byte header.
+   - Actual string length = chunk length - 4 bytes.
 
-1. Divide the value by 100000
-2. Divide the result by 60
 
-## Track Types
+2. **Start Line (0xA5)**
+   - Always Present
+   - Represents the start line of the track.
+   - Contains two LatLon pairs (16 bytes total) defining the start line.
 
-Tracks can be of two types:
-1. Circuit: Only has a start line, which also serves as the finish line.
-2. Point-to-Point: Has separate start and finish lines.
+3. **Combo Flag (0xA7)**
+   - Not Always Present (if it is present it seems to always be 1/True)
+   - Indicates whether the track is a "combo" track.
+   - Contains a single byte (0 or 1) after the chunk header.
+
+4. **Finish Line (0xA6)**
+   - Not Always Present (Only present if the track start and finish line are not the same, i.e. a point to point race not a circuit)
+   - Represents the finish line of the track.
+   - Contains two LatLon pairs (16 bytes total) defining the finish line.
+
+## LatLon Format
+
+Latitude and Longitude are stored as 32-bit integers (little-endian). Their are calculated as the GPS minutes * 10000
+
+They can be converted to decimal degrees with the following:
+```
+degrees = (integer_value as f64) / (100000.0 * 60.0)
+```
+
+## File Footer Chunk
+
+```
+                     1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++---------------+---------------+---------------+---------------+
+|     0xEE      |   Length (2 bytes, little-endian)   |   0x00  |
++---------------+---------------+---------------+---------------+
+|                       Unknown Data (4 bytes)                  |
++---------------+---------------+---------------+---------------+
+```
+
+The File Footer chunk contains:
+- Chunk identifier (0xEE)
+- Length of the footer (2 bytes, little-endian)
+- 1 byte of padding (0)
+- 4 bytes of unknown data
 
 ## Notes
 
-- All multi-byte integer values are stored in little-endian format.
-- The file uses a chunk-based structure, with each chunk identified by a single-byte ID.
-- Each region chunk contains a variable number of track chunks.
-- The combo flag indicates if the track is a combination of multiple tracks.
-
-## Gaps in Understanding
-
-1. The purpose of the 8 bytes of data in the File Header is unknown.
-3. The meaning and structure of the 4-byte footer data are unclear.
-
-This document represents the current understanding of the .BDB file format and may be updated as more information becomes available.
+- All multi-byte integers are stored in little-endian format.
+- Padding bytes are set to 0.
+- The file can contain multiple Region Chunks, each containing multiple Track Chunks.
