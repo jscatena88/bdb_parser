@@ -57,8 +57,8 @@ pub fn parse_line(input: &[u8]) -> IResult<&[u8], Line> {
 
 pub fn parse_track_data(input: &[u8]) -> IResult<&[u8], TrackData> {
     let (input, chunk_id) = parse_chunk_id(input)?;
-    let (input, len) = le_u8(input)?;
-    let (input, _) = tag([0, 0])(input)?; // padding
+    let (input, len) = le_u16(input)?;
+    let (input, _) = tag([ 0])(input)?; // padding
 
     match chunk_id {
         ChunkIdentifier::TrackName => {
