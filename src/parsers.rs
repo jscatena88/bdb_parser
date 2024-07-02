@@ -4,7 +4,7 @@ use nom::{
     bytes::complete::{tag, take},
     combinator::{map, verify},
     error::ErrorKind,
-    multi::{count, many0},
+    multi::many0,
     number::complete::{le_i32, le_u16, le_u8},
     sequence::tuple,
     IResult,
@@ -196,7 +196,7 @@ pub fn parse_file_header(input: &[u8]) -> IResult<&[u8], FileHeader> {
 /// This is the top level parsing function that accepts the entire file and returns a `TrackDatabase`.
 pub fn parse_track_database(input: &[u8]) -> IResult<&[u8], TrackDatabase> {
     let (input, hdr) = parse_file_header(input)?;
-    let (input, mids) = count(parse_region_chunk, 65)(input)?;
+    let (input, mids) = many0(parse_region_chunk)(input)?;
     let (input, footer) = parse_footer(input)?;
 
     Ok((
