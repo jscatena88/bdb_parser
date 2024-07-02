@@ -1,4 +1,6 @@
 # BDB Parser
+[![LICENSE](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![crates.io Version](https://img.shields.io/crates/v/bdb_parser.svg)](https://crates.io/crates/bdb_parser)
 
 ## Overview
 
